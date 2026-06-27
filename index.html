@@ -457,7 +457,17 @@
   };
   function icon(name){ return '<svg viewBox="0 0 24 24" width="18" height="18" class="icon" aria-hidden="true">'+(ICONS[name]||'')+'</svg>'; }
 
-  function statusBadgeClass(v){
+  function formatDate(v){
+    if (!v) return '';
+    var s = String(v);
+    // ISO format: 2026-06-20T... or 2026-06-20
+    var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return m[3]+'/'+m[2]+'/'+m[1];
+    return s;
+  }
+  function isDateKey(k){
+    return /[Dd]ate|[Tt]ari[kh]|startDate|endDate|hireDate|effectiveDate|requestDate/.test(k);
+  }
     var map = {
       'موافق عليها':'badge-green', 'على رأس عمله':'badge-green', 'حصة صفية':'badge-green', 'منفذ':'badge-green', 'منفذ / مغلق':'badge-green',
       'قيد المراجعة':'badge-amber', 'إجازة':'badge-amber', 'تفريغ':'badge-amber', 'قيد الإجراء':'badge-amber',
@@ -1289,6 +1299,7 @@
       var cells = m.columns.map(function(c){
         var k = c[0];
         if ((k === 'status' || k === 'type' || k === 'recordType') && r[k]) return '<td><span class="badge '+statusBadgeClass(r[k])+'">'+escapeHtml(r[k])+'</span></td>';
+        if (isDateKey(k)) return '<td>'+escapeHtml(formatDate(r[k]))+'</td>';
         return '<td>'+escapeHtml(r[k])+'</td>';
       }).join('');
       var actions =
