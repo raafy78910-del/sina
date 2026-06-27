@@ -466,8 +466,9 @@
     return s;
   }
   function isDateKey(k){
-    return /[Dd]ate|[Tt]ari[kh]|startDate|endDate|hireDate|effectiveDate|requestDate/.test(k);
+    return /date|Date/i.test(k);
   }
+  function statusBadgeClass(v){
     var map = {
       'موافق عليها':'badge-green', 'على رأس عمله':'badge-green', 'حصة صفية':'badge-green', 'منفذ':'badge-green', 'منفذ / مغلق':'badge-green',
       'قيد المراجعة':'badge-amber', 'إجازة':'badge-amber', 'تفريغ':'badge-amber', 'قيد الإجراء':'badge-amber',
