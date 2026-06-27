@@ -796,12 +796,12 @@
     '<div class="t-row"><div class="item"><b>الاسم:</b> '+escapeHtml(row.employeeName)+'</div><div class="item"><b>رقم الهوية:</b> '+escapeHtml(row.nationalId)+'</div></div>' +
     '<div class="t-row"><div class="item"><b>مكان العمل:</b> '+escapeHtml(row.workplace)+'</div><div class="item"><b>الوظيفة:</b> '+escapeHtml(row.jobTitle)+'</div></div>' +
     '<div class="t-row"><div class="item"><b>مكان السكن:</b> '+escapeHtml(row.residence)+'</div><div class="item"><b>الحي/القرية:</b> '+escapeHtml(row.neighborhood)+'</div><div class="item"><b>بالقرب من:</b> '+escapeHtml(row.nearLandmark)+'</div></div>' +
-    '<div class="t-statement">أرجو الحصول على بدل مصاريف سفر اعتبارًا من '+escapeHtml(row.effectiveDate)+' حسب خط السفر التالي:</div>' +
+    '<div class="t-statement">أرجو الحصول على بدل مصاريف سفر اعتبارًا من '+escapeHtml(formatDate(row.effectiveDate))+' حسب خط السفر التالي:</div>' +
     '<table class="t-table"><thead><tr><th>من</th><th>إلى</th><th>المسافة</th><th>السعر(الأجرة)</th><th>السعر</th></tr></thead><tbody>'+routesRowsHtml+'</tbody></table>' +
     '<div class="t-total">المجموع: '+(Number(row.totalPrice)||0)+'</div>' +
     notesLine +
     '<div class="t-declare">أقر أنا الموقع أدناه بان البيانات صحيحة، وأنني استعمل مواصلات عامة من مكان سكني المذكور للوصول إلى مكان عملي يوميا، وأتعهد بأنه إذا ثبت غير ذلك ان أتحمل كامل المسؤولية.</div>' +
-    '<div class="t-sign-row"><span>التاريخ: '+escapeHtml(row.requestDate)+' م</span><span>التوقيع: ____________</span></div>' +
+    '<div class="t-sign-row"><span>التاريخ: '+escapeHtml(formatDate(row.requestDate))+' م</span><span>التوقيع: ____________</span></div>' +
     '<div class="t-dashed-sep">ملاحظات المسؤول المباشر:</div>' +
     '<div class="t-declare">أنني على معرفة تامة بان الموظف المذكور أعلاه يسكن بشكل دائم حسب العنوان أعلاه ويسافر يوميا لمكان عمله.</div>' +
     '<div class="t-sign-row"><span>التاريخ: __/__/____ م</span><span>التوقيع: ____________</span></div>' +
