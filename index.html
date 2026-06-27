@@ -220,6 +220,15 @@
   .matrix-total{ font-weight:700; background:var(--primary-soft); }
   .matrix-totals-row td{ font-weight:700; background:var(--surface-2); }
 
+  /* ---------------- جدول إدخال التشكيلات (نموذج متعدد الصفوف) ---------------- */
+  .formations-entry-table{ width:100%; border-collapse:collapse; font-size:.83rem; }
+  .formations-entry-table th{ background:var(--surface-2); padding:8px 6px; border:1px solid var(--border); text-align:center; font-size:.8rem; }
+  .formations-entry-table td{ border:1px solid var(--border); padding:4px 5px; vertical-align:middle; }
+  .formations-entry-table select, .formations-entry-table input[type=text], .formations-entry-table input[type=number]{
+    width:100%; border:1px solid var(--border); padding:5px 6px; border-radius:6px; background:#fff; font-family:inherit; font-size:.82rem;
+  }
+  .formations-entry-table select:focus, .formations-entry-table input:focus{ border-color:var(--accent); outline:none; }
+
   /* ---------------- جدول خط السفر (داخل نموذج المواصلات) ---------------- */
   .route-table{ width:100%; border-collapse:collapse; }
   .route-table th, .route-table td{ border:1px solid var(--border); padding:4px; text-align:center; font-size:.8rem; }
@@ -290,6 +299,16 @@
       ],
       columns:[['teacherName','المعلم'],['type','النوع'],['classSection','الصف/الشعبة'],['subject','المبحث/النشاط'],['hours','الحصص'],['semester','الفصل']]
     },
+    subjects: {
+      sheet:'Subjects', title:'إدارة المباحث', desc:'قائمة المباحث والتخصصات المتاحة في المدرسة', icon:'formations',
+      fields:[
+        {key:'name', label:'اسم المبحث', type:'text', required:true},
+        {key:'shortName', label:'الاختصار', type:'text', hint:'مثال: رياض، عربي، إنجل'},
+        {key:'gradeLevel', label:'المرحلة', type:'select', options:['أساسية دنيا (1-4)','أساسية عليا (5-10)','ثانوية (11-12)','جميع المراحل']},
+        {key:'notes', label:'ملاحظات', type:'textarea'}
+      ],
+      columns:[['name','المبحث'],['shortName','الاختصار'],['gradeLevel','المرحلة']]
+    },
     leaves: {
       sheet:'Leaves', title:'إجازات الموظفين', desc:'تسجيل ومتابعة طلبات إجازات الموظفين', icon:'leaves',
       fields:[
@@ -350,9 +369,9 @@
   // full = عرض+إضافة+تعديل+حذف | edit = عرض+إضافة+تعديل | view = عرض فقط | none = لا شيء
   // (يجب أن تطابق نفس المصفوفة الموجودة في Code.gs)
   var PERMISSIONS = {
-    Admin:     {employees:'full', formations:'full', leaves:'full', transport:'full', transfers:'full', assignments:'full', users:'full'},
-    Secretary: {employees:'edit', formations:'edit', leaves:'edit', transport:'edit', transfers:'edit', assignments:'view', users:'none'},
-    Viewer:    {employees:'view', formations:'view', leaves:'view', transport:'view', transfers:'view', assignments:'view', users:'none'}
+    Admin:     {employees:'full', formations:'full', subjects:'full', leaves:'full', transport:'full', transfers:'full', assignments:'full', users:'full'},
+    Secretary: {employees:'edit', formations:'edit', subjects:'edit', leaves:'edit', transport:'edit', transfers:'edit', assignments:'view', users:'none'},
+    Viewer:    {employees:'view', formations:'view', subjects:'view', leaves:'view', transport:'view', transfers:'view', assignments:'view', users:'none'}
   };
 
   var DEMO_USERS = [
@@ -373,6 +392,14 @@
       {id:5, teacherName:'سارة يوسف عودة', type:'حصة صفية', classSection:'8أ', subject:'عربي', hours:6, semester:'الثاني', year:'2025/2026', notes:''},
       {id:6, teacherName:'خالد سمير منصور', type:'حصة صفية', classSection:'9أ', subject:'علوم', hours:5, semester:'الثاني', year:'2025/2026', notes:''},
       {id:7, teacherName:'خالد سمير منصور', type:'تفريغ', classSection:'', subject:'كشافة', hours:3, semester:'الثاني', year:'2025/2026', notes:''}
+    ],
+    Subjects:[
+      {id:1, name:'رياضيات', shortName:'رياض', gradeLevel:'أساسية عليا (5-10)', notes:''},
+      {id:2, name:'لغة عربية', shortName:'عربي', gradeLevel:'جميع المراحل', notes:''},
+      {id:3, name:'لغة إنجليزية', shortName:'إنجل', gradeLevel:'جميع المراحل', notes:''},
+      {id:4, name:'علوم', shortName:'علوم', gradeLevel:'أساسية عليا (5-10)', notes:''},
+      {id:5, name:'تربية وطنية', shortName:'وطني', gradeLevel:'جميع المراحل', notes:''},
+      {id:6, name:'تربية إسلامية', shortName:'ديني', gradeLevel:'جميع المراحل', notes:''}
     ],
     Leaves:[
       {id:1, employeeId:2, employeeName:'سارة يوسف عودة', leaveType:'أمومة', startDate:'2026-03-01', endDate:'2026-06-01', status:'موافق عليها', notes:''}
@@ -395,10 +422,11 @@
     demoStore: null,
     currentUser: null,
     currentView: 'dashboard',
-    cache: { Employees:[], Formations:[], Leaves:[], Transport:[], Transfers:[], AssignmentsViolations:[], Users:[] },
+    cache: { Employees:[], Formations:[], Subjects:[], Leaves:[], Transport:[], Transfers:[], AssignmentsViolations:[], Users:[] },
     search: {},
     loading:false, loggingIn:false, saving:false,
     error:null, loginError:null, modalError:null,
+    formationRows: null, formationAddError: null,
     modal:null, confirmDelete:null, toast:null
   };
 
@@ -570,6 +598,7 @@
     state.demoStore = {
       Employees: JSON.parse(JSON.stringify(DEMO_SEED.Employees)),
       Formations: JSON.parse(JSON.stringify(DEMO_SEED.Formations)),
+      Subjects: JSON.parse(JSON.stringify(DEMO_SEED.Subjects)),
       Leaves: JSON.parse(JSON.stringify(DEMO_SEED.Leaves)),
       Transport: JSON.parse(JSON.stringify(DEMO_SEED.Transport)),
       Transfers: JSON.parse(JSON.stringify(DEMO_SEED.Transfers)),
@@ -582,7 +611,7 @@
     state.apiUrl = '';
     state.demoMode = false;
     state.currentUser = null;
-    state.cache = { Employees:[], Formations:[], Leaves:[], Transport:[], Transfers:[], AssignmentsViolations:[], Users:[] };
+    state.cache = { Employees:[], Formations:[], Subjects:[], Leaves:[], Transport:[], Transfers:[], AssignmentsViolations:[], Users:[] };
     update();
   }
   function logout(){
@@ -1164,11 +1193,12 @@
   }
 
   function renderShell(){
-    var moduleOrder = ['employees','formations','leaves','transport','transfers','assignments'];
+    var moduleOrder = ['employees','formations','subjects','leaves','transport','transfers','assignments'];
     var moduleNav = moduleOrder.filter(function(k){ return canView(k); })
       .map(function(k){
         var item = navItem(k, MODULES[k].icon, MODULES[k].title);
         if (k === 'formations' && canView('formations')) item += navItem('matrix','matrix','جدول التشكيلات');
+        if (k === 'formations' && canView('formations')) item += navItem('formations-add','plus','إضافة تشكيلات');
         return item;
       }).join('');
     return '' +
@@ -1205,6 +1235,7 @@
     if (state.currentView === 'dashboard') return renderDashboard();
     if (state.currentView === 'reports') return renderReportsView();
     if (state.currentView === 'matrix') return renderFormationsMatrix();
+    if (state.currentView === 'formations-add') return renderFormationsAddView();
     if (MODULES[state.currentView]) return renderModuleView(state.currentView);
     return renderDashboard();
   }
@@ -1231,8 +1262,10 @@
 
     var quick = '';
     if (canView('employees')) quick += quickLinkCard('employees','بيانات الموظفين','إضافة وتعديل بيانات المعلمين والموظفين','employees');
-    if (canView('formations')) quick += quickLinkCard('formations','بيانات التشكيلات','إدخال حصص كل معلم','formations');
+    if (canEdit('formations')) quick += quickLinkCard('formations-add','إضافة تشكيلات','إضافة حصص معلم كاملة بنموذج واحد','plus');
+    if (canView('formations')) quick += quickLinkCard('formations','بيانات التشكيلات','عرض وتعديل جميع سجلات التشكيلات','formations');
     if (canView('formations')) quick += quickLinkCard('matrix','جدول التشكيلات','عرض مصفوفة المعلمين × الشعب','matrix');
+    if (canView('subjects')) quick += quickLinkCard('subjects','إدارة المباحث','قائمة المباحث الدراسية المتاحة','formations');
     if (canView('leaves')) quick += quickLinkCard('leaves','إجازات الموظفين','تسجيل ومتابعة الإجازات','leaves');
     if (canView('transport')) quick += quickLinkCard('transport','طلبات المواصلات','بدل مواصلات الموظفين حسب النموذج الرسمي','transport');
     if (canView('transfers')) quick += quickLinkCard('transfers','النقل والتقاعد والاستقالة','إجراءات نقل وتقاعد الموظفين','transfer');
@@ -1320,6 +1353,129 @@
       '</div>' +
       (filtered.length === 0 ? renderEmpty(editable, key) : '<div class="table-wrap"><table><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>') +
     '</div>';
+  }
+
+
+  /* ---------------- شاشة إضافة تشكيلات (نموذج متعدد الصفوف) ---------------- */
+  function getSubjectOptions(){
+    var subjects = state.cache.Subjects || [];
+    if (subjects.length === 0) return [];
+    return subjects.map(function(s){ return s.name; });
+  }
+
+  function getSectionOptions(){
+    // بناء خيارات الصفوف من بيانات موجودة أو قيم افتراضية
+    var existing = {};
+    (state.cache.Formations||[]).forEach(function(r){ if(r.classSection) existing[r.classSection]=true; });
+    var grades = ['1','2','3','4','5','6','7','8','9','10'];
+    var letters = ['أ','ب','ج','د','ه','و','ز'];
+    var defaults = [];
+    grades.forEach(function(g){ letters.forEach(function(l){ defaults.push(g+l); }); });
+    return defaults.concat(Object.keys(existing).filter(function(k){ return defaults.indexOf(k)===-1; }));
+  }
+
+  function renderFormationsAddView(){
+    if (!canEdit('formations')) return '<div class="card"><div class="empty-state"><p>ليس لديك صلاحية لإضافة تشكيلات.</p></div></div>';
+    var employees = state.cache.Employees || [];
+    var subjectOpts = getSubjectOptions();
+    var sectionOpts = getSectionOptions();
+    var teacherOptions = employees.filter(function(e){ return e.status !== 'متقاعد' && e.status !== 'مستقيل'; })
+      .map(function(e){ return '<option value="'+escapeHtml(e.fullName)+'">'+escapeHtml(e.fullName)+'</option>'; }).join('');
+    var subjectSelect = '<option value="">— اختر —</option>' + subjectOpts.map(function(s){ return '<option value="'+escapeHtml(s)+'">'+escapeHtml(s)+'</option>'; }).join('');
+    var sectionSelect = '<option value="">— اختر شعبة —</option>' + sectionOpts.map(function(s){ return '<option value="'+escapeHtml(s)+'">'+escapeHtml(s)+'</option>'; }).join('');
+    // بناء صفوف نموذج الحصص من state.formationRows
+    if (!state.formationRows) state.formationRows = [{type:'حصة صفية',classSection:'',subject:'',hours:'',notes:''}];
+    var rows = state.formationRows;
+    var rowsHtml = rows.map(function(row, i){
+      var typeOpts = ['حصة صفية','تفريغ'].map(function(t){ return '<option value="'+t+'"'+(row.type===t?' selected':'')+'>'+t+'</option>'; }).join('');
+      var secCell = row.type === 'تفريغ' ? '<td><span class="muted" style="font-size:.8rem">—</span></td>' :
+        '<td><select class="fr-section" data-row="'+i+'"><option value="">اختر</option>'+sectionOpts.map(function(s){ return '<option value="'+escapeHtml(s)+'"'+(row.classSection===s?' selected':'')+'>'+escapeHtml(s)+'</option>'; }).join('')+'</select><input class="fr-section-custom" data-row="'+i+'" type="text" placeholder="أو اكتب يدويًا" value="'+escapeHtml(row.classSectionCustom||'')+'" style="margin-top:4px;width:100%;font-size:.8rem"></td>';
+      var subjOpts = '<option value="">اختر</option>' + subjectOpts.map(function(s){ return '<option value="'+escapeHtml(s)+'"'+(row.subject===s?' selected':'')+'>'+escapeHtml(s)+'</option>'; }).join('');
+      return '<tr>' +
+        '<td style="text-align:center;color:var(--muted);font-size:.8rem">'+(i+1)+'</td>'+
+        '<td><select class="fr-type" data-row="'+i+'">'+typeOpts+'</select></td>'+
+        secCell+
+        '<td><select class="fr-subject" data-row="'+i+'">'+subjOpts+'</select><input class="fr-subject-custom" data-row="'+i+'" type="text" placeholder="أو اكتب يدويًا" value="'+escapeHtml(row.subjectCustom||'')+'" style="margin-top:4px;width:100%;font-size:.8rem"></td>'+
+        '<td><input class="fr-hours" data-row="'+i+'" type="number" min="1" max="40" value="'+escapeHtml(String(row.hours||''))+'" style="width:60px;text-align:center"></td>'+
+        '<td><input class="fr-notes" data-row="'+i+'" type="text" value="'+escapeHtml(row.notes||'')+'" placeholder="اختياري"></td>'+
+        '<td><button type="button" class="icon-btn icon-danger" data-action="fr-remove-row" data-row="'+i+'" title="حذف السطر">'+icon('trash')+'</button></td>'+
+      '</tr>';
+    }).join('');
+
+    var noEmp = employees.length === 0 ? '<div class="alert alert-danger">'+icon('alert')+' لا يوجد موظفون — أضفهم أولًا من "بيانات الموظفين"</div>' : '';
+    var noSubj = subjectOpts.length === 0 ? '<div class="alert alert-danger">'+icon('alert')+' لا توجد مباحث مُضافة — أضفها من "إدارة المباحث" أولًا أو اكتبها يدويًا أدناه</div>' : '';
+
+    return '' +
+    '<div class="view-head"><div><h2>إضافة تشكيلات معلم</h2><p class="muted">أدخل جميع حصص معلم في نموذج واحد — كل سطر يمثل صفًا أو نشاطًا مستقلًا</p></div>' +
+      '<div class="view-actions">' +
+        '<button type="button" class="btn btn-ghost" data-action="nav" data-view="formations">'+icon('formations')+' عرض السجلات</button>' +
+        '<button type="button" class="btn btn-ghost" data-action="nav" data-view="matrix">'+icon('matrix')+' جدول التشكيلات</button>' +
+      '</div>' +
+    '</div>' +
+    noEmp + noSubj +
+    '<div class="card">' +
+      '<form id="formations-add-form">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:18px">' +
+          '<div class="field"><label>اسم المعلم *</label>'+
+            '<select name="teacherName" id="fr-teacher" required>'+
+              '<option value="">— اختر من القائمة —</option>'+teacherOptions+
+            '</select>' +
+            '<input type="text" name="teacherNameCustom" id="fr-teacher-custom" placeholder="أو اكتب اسمًا يدويًا" style="margin-top:6px">'+
+          '</div>'+
+          '<div class="field"><label>الفصل الدراسي</label>'+
+            '<select name="semester">'+
+              '<option value="الثاني">الثاني</option>'+
+              '<option value="الأول">الأول</option>'+
+            '</select>'+
+          '</div>'+
+          '<div class="field"><label>العام الدراسي</label>'+
+            '<input type="text" name="year" value="2025/2026">'+
+          '</div>'+
+        '</div>'+
+        '<div class="table-wrap"><table class="formations-entry-table">'+
+          '<thead><tr>'+
+            '<th style="width:36px">#</th>'+
+            '<th>نوع الحصة</th>'+
+            '<th>الصف / الشعبة</th>'+
+            '<th>المبحث / النشاط</th>'+
+            '<th>عدد الحصص</th>'+
+            '<th>ملاحظات</th>'+
+            '<th></th>'+
+          '</tr></thead>'+
+          '<tbody id="fr-rows">'+rowsHtml+'</tbody>'+
+        '</table></div>'+
+        '<div style="display:flex;gap:10px;margin-top:12px">'+
+          '<button type="button" class="btn btn-ghost" data-action="fr-add-class-row">'+icon('plus')+' إضافة حصة صفية</button>'+
+          '<button type="button" class="btn btn-ghost" data-action="fr-add-release-row">'+icon('plus')+' إضافة تفريغ</button>'+
+        '</div>'+
+        (state.formationAddError ? '<div class="alert alert-danger" style="margin-top:12px">'+icon('alert')+' '+escapeHtml(state.formationAddError)+'</div>' : '')+
+        '<div class="modal-actions" style="margin-top:18px">'+
+          '<button type="button" class="btn btn-ghost" data-action="fr-reset">مسح النموذج</button>'+
+          '<button type="submit" class="btn btn-primary" '+(state.saving?'disabled':'')+'>'+(state.saving?'جارٍ الحفظ...':icon('check')+' حفظ جميع الحصص')+'</button>'+
+        '</div>'+
+      '</form>'+
+    '</div>';
+  }
+
+  function syncFormationRows(){
+    // قراءة بيانات النموذج من DOM إلى state.formationRows
+    var rows = state.formationRows || [];
+    rows.forEach(function(row, i){
+      var typeEl = document.querySelector('.fr-type[data-row="'+i+'"]');
+      var hoursEl = document.querySelector('.fr-hours[data-row="'+i+'"]');
+      var notesEl = document.querySelector('.fr-notes[data-row="'+i+'"]');
+      var subjectEl = document.querySelector('.fr-subject[data-row="'+i+'"]');
+      var subjectCustomEl = document.querySelector('.fr-subject-custom[data-row="'+i+'"]');
+      var sectionEl = document.querySelector('.fr-section[data-row="'+i+'"]');
+      var sectionCustomEl = document.querySelector('.fr-section-custom[data-row="'+i+'"]');
+      if (typeEl) row.type = typeEl.value;
+      if (hoursEl) row.hours = hoursEl.value;
+      if (notesEl) row.notes = notesEl.value;
+      if (subjectEl) row.subject = subjectEl.value;
+      if (subjectCustomEl) row.subjectCustom = subjectCustomEl.value;
+      if (sectionEl) row.classSection = sectionEl.value;
+      if (sectionCustomEl) row.classSectionCustom = sectionCustomEl.value;
+    });
   }
 
   function renderFormationsMatrix(){
@@ -1518,6 +1674,23 @@
           update();
           break;
         case 'print-transport-form': printTransportRecord(btn.dataset.id); break;
+        case 'fr-add-class-row':
+          syncFormationRows();
+          state.formationRows.push({type:'حصة صفية',classSection:'',subject:'',hours:'',notes:''});
+          update(); break;
+        case 'fr-add-release-row':
+          syncFormationRows();
+          state.formationRows.push({type:'تفريغ',classSection:'',subject:'',hours:'',notes:''});
+          update(); break;
+        case 'fr-remove-row':
+          syncFormationRows();
+          state.formationRows.splice(Number(btn.dataset.row),1);
+          if (state.formationRows.length === 0) state.formationRows.push({type:'حصة صفية',classSection:'',subject:'',hours:'',notes:''});
+          update(); break;
+        case 'fr-reset':
+          state.formationRows = [{type:'حصة صفية',classSection:'',subject:'',hours:'',notes:''}];
+          state.formationAddError = null;
+          update(); break;
       }
     });
 
@@ -1528,6 +1701,45 @@
       } else if (e.target.id === 'login-form'){
         var fd = new FormData(e.target);
         handleLogin(fd.get('username'), fd.get('password'));
+      } else if (e.target.id === 'formations-add-form'){
+        syncFormationRows();
+        var fdF = new FormData(e.target);
+        var teacherName = fdF.get('teacherName') || fdF.get('teacherNameCustom') || '';
+        var teacherCustom = fdF.get('teacherNameCustom') || '';
+        var finalTeacher = teacherCustom.trim() || teacherName.trim();
+        var semester = fdF.get('semester') || '';
+        var year = fdF.get('year') || '';
+        if (!finalTeacher){ state.formationAddError = 'الرجاء اختيار اسم المعلم أو كتابته'; update(); return; }
+        var validRows = (state.formationRows||[]).filter(function(r){
+          var subj = r.subjectCustom && r.subjectCustom.trim() ? r.subjectCustom.trim() : (r.subject||'').trim();
+          return subj && r.hours;
+        });
+        if (validRows.length === 0){ state.formationAddError = 'الرجاء إدخال حصة واحدة على الأقل مع المبحث وعدد الحصص'; update(); return; }
+        state.formationAddError = null;
+        state.saving = true; update();
+        var promises = validRows.map(function(row){
+          var subj = row.subjectCustom && row.subjectCustom.trim() ? row.subjectCustom.trim() : (row.subject||'').trim();
+          var section = (row.type === 'تفريغ') ? '' : ((row.classSectionCustom && row.classSectionCustom.trim()) ? row.classSectionCustom.trim() : (row.classSection||'').trim());
+          var payload = {teacherName:finalTeacher, type:row.type, classSection:section, subject:subj, hours:Number(row.hours)||0, semester:semester, year:year, notes:row.notes||''};
+          if (state.demoMode){
+            demoAdd('Formations', payload);
+            return Promise.resolve({success:true});
+          }
+          return api('add', 'Formations', {data:payload});
+        });
+        Promise.all(promises).then(function(){
+          return loadAllData();
+        }).then(function(){
+          state.saving = false;
+          state.formationRows = [{type:'حصة صفية',classSection:'',subject:'',hours:'',notes:''}];
+          state.toast = 'تم حفظ '+validRows.length+' سجل تشكيلات بنجاح ✓';
+          setTimeout(function(){ state.toast=null; update(); }, 3500);
+          update();
+        }).catch(function(err){
+          state.saving = false;
+          state.formationAddError = err.message || 'حدث خطأ أثناء الحفظ';
+          update();
+        });
       } else if (e.target.id === 'modal-form'){
         var moduleKey = e.target.dataset.module, mode = e.target.dataset.mode, id = e.target.dataset.id;
         if (moduleKey === 'transport'){
@@ -1564,6 +1776,12 @@
     });
 
     app.addEventListener('change', function(e){
+      if (e.target.classList.contains('fr-type') && state.currentView === 'formations-add'){
+        syncFormationRows();
+        var rowIdx = Number(e.target.dataset.row);
+        if (state.formationRows[rowIdx]) state.formationRows[rowIdx].type = e.target.value;
+        update(); return;
+      }
       if (e.target.name === 'employeeName' && e.target.closest('#modal-form') && state.modal && state.modal.moduleKey === 'transport'){
         var emp = (state.cache.Employees||[]).find(function(x){ return x.fullName === e.target.value; });
         if (emp){

@@ -16,14 +16,15 @@
 // view  = عرض فقط
 // none  = لا صلاحية إطلاقًا
 var PERMISSIONS = {
-  Admin:     { employees: 'full', formations: 'full', leaves: 'full', transport: 'full', transfers: 'full', assignments: 'full', users: 'full' },
-  Secretary: { employees: 'edit', formations: 'edit', leaves: 'edit', transport: 'edit', transfers: 'edit', assignments: 'view', users: 'none' },
-  Viewer:    { employees: 'view', formations: 'view', leaves: 'view', transport: 'view', transfers: 'view', assignments: 'view', users: 'none' }
+  Admin:     { employees: 'full', formations: 'full', subjects: 'full', leaves: 'full', transport: 'full', transfers: 'full', assignments: 'full', users: 'full' },
+  Secretary: { employees: 'edit', formations: 'edit', subjects: 'edit', leaves: 'edit', transport: 'edit', transfers: 'edit', assignments: 'view', users: 'none' },
+  Viewer:    { employees: 'view', formations: 'view', subjects: 'view', leaves: 'view', transport: 'view', transfers: 'view', assignments: 'view', users: 'none' }
 };
 
 var SHEET_TO_MODULE = {
   Employees: 'employees',
   Formations: 'formations',
+  Subjects: 'subjects',
   Leaves: 'leaves',
   Transport: 'transport',
   Transfers: 'transfers',
@@ -61,6 +62,7 @@ function setupSheets() {
     'Users': ['id', 'username', 'password', 'fullName', 'role', 'active'],
     'Employees': ['id', 'fullName', 'nationalId', 'jobTitle', 'subject', 'classAssigned', 'phone', 'hireDate', 'status', 'notes'],
     'Formations': ['id', 'teacherName', 'type', 'classSection', 'subject', 'hours', 'semester', 'year', 'notes'],
+    'Subjects': ['id', 'name', 'shortName', 'gradeLevel', 'notes'],
     'Leaves': ['id', 'employeeId', 'employeeName', 'leaveType', 'startDate', 'endDate', 'status', 'notes'],
     'Transport': ['id', 'adminUnit', 'employeeName', 'nationalId', 'workplace', 'jobTitle', 'residence', 'neighborhood', 'nearLandmark', 'effectiveDate', 'requestDate', 'routesJson', 'totalPrice', 'notes'],
     'Transfers': ['id', 'employeeName', 'type', 'date', 'fromSchool', 'toSchool', 'decisionNumber', 'status', 'notes'],
